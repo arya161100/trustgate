@@ -50,6 +50,13 @@ plus the TrustGate console, with an agent network (`trustgate`) that runs in
 the browser via the reference runtime, BYOK chat, and site actions
 (`website_*` tools) that the policy gate guards.
 
+**M1 status (19 Nov 2026):** the demo store + console are built and work
+with no LLM key: items, cart, checkout through the policy gate, identity
+registry with a real Ed25519 keypair, policy editor, audit viewer with
+chain verification, and all eight attack demos. The agent network, BYOK
+chat, and site actions land in M2. Serve locally with `node site/server.mjs`
+(port 8080, or `PORT=8123 node site/server.mjs`).
+
 Try it live: **https://arya161100.github.io/trustgate/**
 
 Attack demos (all verifiable in the browser, no LLM key needed):

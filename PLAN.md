@@ -23,13 +23,16 @@ with auditable receipts; versioning integrity with signatures).
       sign/verify, policy engine, hash-chained audit log — Node tests green.
 - [ ] Design docs: manifest format, policy schema, audit format.
 
-### M1 — Demo store + TrustGate console, no LLM needed (24–30 Nov)
-- [ ] `site/` plain website: demo store (items, cart, checkout) + console
+### M1 — Demo store + TrustGate console, no LLM needed (24–30 Nov) ✅ done 19 Nov 2026
+- [x] `site/` plain website: demo store (items, cart, checkout) + console
       (identity registry, policy editor, audit viewer).
-- [ ] Attack demos all working in-browser: unsigned / tampered / expired /
+- [x] Attack demos all working in-browser: unsigned / tampered / expired /
       revoked manifest; over-cap / over-budget / off-allowlist spend;
       prompt-injected drain. Each shows the stable reject code.
-- [ ] Audit chain verify button (recompute + report break point, if any).
+- [x] Audit chain verify button (recompute + report break point, if any).
+- Site tests: 22 green (15 state + 7 lib-sync); library tests 27 green;
+  total 49. Site is plain static files + `server.mjs`, ready for Railway
+  static deploy (not deployed yet).
 
 ### M2 — Agentify (1–7 Dec)
 - [ ] Follow `skills/agentify-website/SKILL.md`: inventory → network design

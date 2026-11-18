@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>TrustGate — Demo Store + Console</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<header>
+  <h1>TrustGate — Demo Store + Console</h1>
+  <p>The missing trust layer for the open agentic web: signed agent identity
+  (Ed25519), a policy gate (SpendGuard model), and a hash-chained audit
+  trail. Everything on this page runs in your browser with real crypto and
+  real policy evaluation — no server, no LLM key, no demo mode. Amounts are
+  in cents; every verdict is computed live.</p>
+</header>
+
+<div class="statusbar">
+  <span>Origin <b id="origin-line">—</b></span>
+  <span>Vault balance <b id="balance-line">—</b></span>
+  <span>Spent today <b id="daily-line">—</b></span>
+  <span>Per-action cap <b id="cap-line">—</b></span>
+  <span>Gate <b id="paused-line">—</b></span>
+  <button id="reset-btn" class="secondary">Reset demo</button>
+</div>
+
+<main>
+  <section id="store" aria-label="Demo store">
+    <h2>Demo store</h2>
+    <p class="muted">Add items, then check out. Checkout goes through the
+    policy gate as a <code>place_order</code> action and is written to the
+    audit trail either way.</p>
+    <div class="catalog" id="catalog"></div>
+    <h3>Cart</h3>
+    <div id="cart-lines"></div>
+    <div class="cart-total"><span>Total</span><span id="cart-total">$0.00</span></div>
+    <p><button id="checkout-btn">Checkout</button></p>
+    <div class="result" id="checkout-result"></div>
+  </section>
+
+  <section id="console" aria-label="TrustGate console">
+    <h2>TrustGate console</h2>
+
+    <h3>Identity registry</h3>
+    <p class="muted">The store's own agent keypair is generated in your
+    browser on load; the private key never leaves this page. The manifest
+    is signed with it and verified with the library.</p>
+    <p>Publisher key: <code id="own-key">—</code></p>
+    <p><button id="verify-own-btn">Verify own manifest</button></p>
+    <div class="result" id="verify-own-result"></div>
+    <details>
+      <summary>Own manifest (signed JSON)</summary>
+      <pre id="own-manifest">—</pre>
+    </details>
+    <div id="registry-table"></div>
+
+    <h3>Policy editor</h3>
+    <p class="muted">Fail-closed defaults: limits 0 and empty allowlists
+    deny everything until the owner sets a policy. Changes are audited.</p>
+    <div class="form-row">
+      <div><label for="pol-perActionMax">Per-action max (cents)</label>
+        <input id="pol-perActionMax" type="number" min="0" step="1" /></div>
+      <div><label for="pol-dailyMax">Daily max (cents)</label>
+        <input id="pol-dailyMax" type="number" min="0" step="1" /></div>
+      <div><label for="pol-balance">Vault balance (cents)</label>
+        <input id="pol-balance" type="number" min="0" step="1" /></div>
+    </div>
+    <p><label><input id="pol-paused" type="checkbox" /> Paused (deny everything)</label></p>
+    <label for="pol-origins">Allowed origins (one per line)</label>
+    <textarea id="pol-origins"></textarea>
+    <label for="pol-actions">Allowed actions (one per line)</label>
+    <textarea id="pol-actions"></textarea>
+    <p><button id="policy-save-btn">Save policy</button></p>
+    <div class="result" id="policy-result"></div>
+
+    <h3>Audit trail (<span id="audit-count">0</span> entries)</h3>
+    <p class="muted">Every allow and deny is hash-chained to the previous
+    entry. Verify recomputes every hash; tampering breaks the chain at the
+    modified entry.</p>
+    <p>
+      <button id="verify-chain-btn">Verify audit chain</button>
+      <button id="tamper-btn" class="danger">Tamper with entry #1</button>
+    </p>
+    <div class="result" id="verify-chain-result"></div>
+    <div id="audit-table"></div>
+  </section>
+
+  <section id="attacks" aria-label="Attack demos" style="grid-column: 1 / -1;">
+    <h2>Attack demos</h2>
+    <p class="muted">Each demo runs the real check — WebCrypto signature
+    verification or the real policy engine — and shows the stable reject
+    code. Every attempt is written to the audit trail.</p>
+    <div class="attack-grid">
+      <button data-attack="unsigned">Unsigned manifest</button>
+      <button data-attack="tampered">Tampered manifest</button>
+      <button data-attack="expired">Expired manifest</button>
+      <button data-attack="revoked">Revoked manifest</button>
+      <button data-attack="overcap">Spend over per-action cap</button>
+      <button data-attack="overbudget">Spend over daily budget</button>
+      <button data-attack="offallowlist">Spend from off-allowlist origin</button>
+      <button data-attack="drain">Prompt-injected drain</button>
+    </div>
+    <div class="result" id="attack-result"></div>
+  </section>
+</main>
+
+<footer>
+  TrustGate (MIT) — Track 2, Cognizant Open Agentic Web Challenge.
+  Library: <code>trustgate/</code> (vendored into <code>site/js/lib/</code>,
+  byte-identical, checked by <code>site/tests/lib-sync.test.mjs</code>).
+  Docs: <code>docs/manifest-format.md</code>, <code>docs/policy-schema.md</code>,
+  <code>docs/audit-format.md</code>.
+</footer>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
