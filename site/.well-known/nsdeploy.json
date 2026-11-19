@@ -1,0 +1,18 @@
+{
+  "exports": [
+    {
+      "aliases": [
+        "trustgate",
+        "trustgate_guard"
+      ],
+      "front_man": "trustgate_guard",
+      "network": "trustgate",
+      "url": "trustgate"
+    }
+  ],
+  "imports": [],
+  "link_updates": {
+    "mode": "browser-local"
+  },
+  "protocol": "nsdeploy-link/v1"
+}

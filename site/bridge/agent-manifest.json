@@ -1,0 +1,10 @@
+{
+  "networks": [
+    {
+      "name": "trustgate"
+    }
+  ],
+  "actions": {
+    "version": 1
+  }
+}

@@ -50,12 +50,19 @@ plus the TrustGate console, with an agent network (`trustgate`) that runs in
 the browser via the reference runtime, BYOK chat, and site actions
 (`website_*` tools) that the policy gate guards.
 
-**M1 status (19 Nov 2026):** the demo store + console are built and work
-with no LLM key: items, cart, checkout through the policy gate, identity
-registry with a real Ed25519 keypair, policy editor, audit viewer with
-chain verification, and all eight attack demos. The agent network, BYOK
-chat, and site actions land in M2. Serve locally with `node site/server.mjs`
-(port 8080, or `PORT=8123 node site/server.mjs`).
+**M2 status (19 Nov 2026):** the agent network is built and validated, the
+BYOK assistant is mounted on the page, and all 10 site actions are tested
+(47/47 Node tests green, including the runtime's own agentified checks).
+Network `trustgate`: front agent `trustgate_guard` plus specialists
+`verifier`, `policy_gate` and `auditor`; model `alibaba/qwen3.8-flash` on the
+Otari default router. Serve locally with the skill's server (see Quickstart)
+and open http://127.0.0.1:8080/ — the network URL is
+http://127.0.0.1:8080/trustgate (public: https://arya161100.github.io/trustgate/trustgate).
+The assistant sends your messages, and the page data it reads, to the LLM
+provider you choose in its settings. Other agent sites can run this network
+for their own visitors, but then it has no site tools: it answers only from
+its instructions and points to this site's page. The trust demos (verify /
+gate / audit) still run without any key.
 
 Try it live: **https://arya161100.github.io/trustgate/**
 
@@ -78,15 +85,20 @@ trustgate/            Reusable zero-dependency JS library (the community compone
   audit.js            Hash-chained append-only audit log
   tests/              node --test
 site/                 The conforming agentic website (demo store + console)
-  index.html          Store + TrustGate console UI
+  index.html          Store + TrustGate console UI (+ assistant section)
+  site.js             Assistant mount: BYOK chat + confirmation dialogs
   js/                 Store logic + TrustGate UI
   site-actions.js     Registered site actions (website_* tools)
   trustgate.hocon     Agent network definition (source)
   trustgate.network.json  Resolved network (generated, do not edit by hand)
-  agent-manifest.json Links.json  Public bundle files
+  agent-manifest.json Public bundle file (brand, router, peer policy, tools)
+  links.json          Linked networks (none: no partner sites)
+  agent-mcp.json      MCP facade descriptor (generated, not available: static bundle)
+  bridge/             Action bridge + manifest copy (generated)
+  .well-known/        nsdeploy discovery files (generated)
   runtime/            Reference browser runtime (copied unchanged from
                       cognizant-ai-labs/agentic-web skills/agentify-website)
-  tests/              Node tests for site actions
+  tests/              Node tests for site actions (+ site_harness.mjs setup)
 docs/                 Design docs: manifest format, policy schema, audit format
 ```
 

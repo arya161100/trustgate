@@ -5,15 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>TrustGate — Demo Store + Console</title>
 <link rel="stylesheet" href="css/style.css" />
+<script type="module" src="site.js"></script>
 </head>
 <body>
 <header>
   <h1>TrustGate — Demo Store + Console</h1>
-  <p>The missing trust layer for the open agentic web: signed agent identity
+  <p id="fact-about">The missing trust layer for the open agentic web: signed agent identity
   (Ed25519), a policy gate (SpendGuard model), and a hash-chained audit
-  trail. Everything on this page runs in your browser with real crypto and
-  real policy evaluation — no server, no LLM key, no demo mode. Amounts are
-  in cents; every verdict is computed live.</p>
+  trail. The trust demos run entirely in your browser with real crypto and
+  real policy evaluation — no server, no demo mode. The assistant below
+  sends your messages, and the page data it reads, to the LLM provider you
+  choose in its settings. Amounts are in cents; every verdict is computed live.</p>
 </header>
 
 <div class="statusbar">
@@ -28,7 +30,7 @@
 <main>
   <section id="store" aria-label="Demo store">
     <h2>Demo store</h2>
-    <p class="muted">Add items, then check out. Checkout goes through the
+    <p class="muted" id="fact-store">Add items, then check out. Checkout goes through the
     policy gate as a <code>place_order</code> action and is written to the
     audit trail either way.</p>
     <div class="catalog" id="catalog"></div>
@@ -43,7 +45,7 @@
     <h2>TrustGate console</h2>
 
     <h3>Identity registry</h3>
-    <p class="muted">The store's own agent keypair is generated in your
+    <p class="muted" id="fact-identity">The store's own agent keypair is generated in your
     browser on load; the private key never leaves this page. The manifest
     is signed with it and verified with the library.</p>
     <p>Publisher key: <code id="own-key">—</code></p>
@@ -56,7 +58,7 @@
     <div id="registry-table"></div>
 
     <h3>Policy editor</h3>
-    <p class="muted">Fail-closed defaults: limits 0 and empty allowlists
+    <p class="muted" id="fact-policy">Fail-closed defaults: limits 0 and empty allowlists
     deny everything until the owner sets a policy. Changes are audited.</p>
     <div class="form-row">
       <div><label for="pol-perActionMax">Per-action max (cents)</label>
@@ -75,7 +77,7 @@
     <div class="result" id="policy-result"></div>
 
     <h3>Audit trail (<span id="audit-count">0</span> entries)</h3>
-    <p class="muted">Every allow and deny is hash-chained to the previous
+    <p class="muted" id="fact-audit">Every allow and deny is hash-chained to the previous
     entry. Verify recomputes every hash; tampering breaks the chain at the
     modified entry.</p>
     <p>
@@ -88,10 +90,10 @@
 
   <section id="attacks" aria-label="Attack demos" style="grid-column: 1 / -1;">
     <h2>Attack demos</h2>
-    <p class="muted">Each demo runs the real check — WebCrypto signature
+    <p class="muted" id="fact-attacks">Each demo runs the real check — WebCrypto signature
     verification or the real policy engine — and shows the stable reject
     code. Every attempt is written to the audit trail.</p>
-    <div class="attack-grid">
+    <div class="attack-grid" id="attack-grid">
       <button data-attack="unsigned">Unsigned manifest</button>
       <button data-attack="tampered">Tampered manifest</button>
       <button data-attack="expired">Expired manifest</button>
@@ -102,6 +104,21 @@
       <button data-attack="drain">Prompt-injected drain</button>
     </div>
     <div class="result" id="attack-result"></div>
+  </section>
+
+  <section id="assistant" class="assistant" aria-labelledby="assistant-heading" style="grid-column: 1 / -1;">
+    <h2 id="assistant-heading">Ask TrustGate</h2>
+    <p>I can show you the store and the console, add items to the cart, check the policy gate, verify a manifest, and check the audit trail — and place an order for you after you confirm it.</p>
+    <p class="assistant-note">Your messages and this page's data go to the LLM provider you choose in the settings below. You confirm anything that cannot be undone before it happens.</p>
+    <p id="assistant-status" role="status">Connecting the assistant… If this message stays, the assistant could not load. You can still use the page directly.</p>
+    <div id="agent-app">
+      <div data-ns-slot="header"></div>
+      <div class="assistant-panels">
+        <div data-ns-slot="chat"></div>
+        <div data-ns-slot="agents"></div>
+      </div>
+      <div data-ns-slot="settings"></div>
+    </div>
   </section>
 </main>
 

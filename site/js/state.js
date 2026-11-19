@@ -53,6 +53,10 @@ export function createDemoState() {
     registry: [],
     revokedHashes: [],
     cart: [],
+    // Cart version: increments on every cart change. Checkout takes
+    // expectedVersion and refuses a mismatch, so a visitor never confirms
+    // one cart and pays for another.
+    version: 0,
   };
 }
 
@@ -153,28 +157,88 @@ export function addToCart(state, id, qty = 1) {
   const line = state.cart.find((l) => l.id === id);
   if (line) line.qty += qty;
   else state.cart.push({ id, qty });
+  state.version += 1;
   return state.cart;
+}
+
+/**
+ * Set exact cart quantities (0 removes the line). Validates every line
+ * before changing anything, so a bad line leaves the cart untouched.
+ * `lines` is [{ id, qty }] with integer qty 0..100 and no duplicate ids.
+ */
+export function setCartQuantities(state, lines) {
+  if (!Array.isArray(lines)) throw new Error("setCartQuantities: lines must be an array");
+  const seen = new Set();
+  for (const line of lines) {
+    if (!line || typeof line !== "object") throw new Error("setCartQuantities: bad line");
+    const item = CATALOG.find((i) => i.id === line.id);
+    if (!item) throw new Error("setCartQuantities: unknown item " + line.id);
+    if (!Number.isInteger(line.qty) || line.qty < 0 || line.qty > 100) {
+      throw new Error("setCartQuantities: qty must be an integer 0..100");
+    }
+    if (seen.has(line.id)) throw new Error("setCartQuantities: duplicate item " + line.id);
+    seen.add(line.id);
+  }
+  state.cart = lines.filter((l) => l.qty > 0).map((l) => ({ id: l.id, qty: l.qty }));
+  state.version += 1;
+  return state.cart;
+}
+
+/**
+ * Read-only checkout check: what checkout would do, without changing
+ * anything. Returns { ok: true, total, lines } or { ok: false, reason }.
+ * `expectedVersion` (when given) must equal the current cart version;
+ * a mismatch means the cart changed since the visitor last saw it.
+ * The confirmation dialog and checkout itself both call this first.
+ */
+export function checkCheckout(state, origin, expectedVersion) {
+  if (expectedVersion !== undefined && expectedVersion !== state.version) {
+    return { ok: false, reason: "StaleCartVersion" };
+  }
+  const amount = cartTotal(state);
+  const lines = state.cart.map((line) => {
+    const item = CATALOG.find((i) => i.id === line.id);
+    return { id: line.id, name: item.name, qty: line.qty, price: item.price, lineTotal: item.price * line.qty };
+  });
+  const result = evaluatePolicy(state.policy, { origin, name: "place_order", amount }, { dailySpent: dailySpent(state) });
+  if (!result.allowed) return { ok: false, reason: result.reason, total: amount, lines };
+  return { ok: true, total: amount, lines };
 }
 
 /**
  * Checkout: the cart total goes through the policy gate as place_order.
  * On allow, returns a receipt with a generated order id and audit ref.
+ * Refuses (without changing anything) when the check above refuses.
  */
-export async function checkout(state, origin) {
-  const amount = cartTotal(state);
+export async function checkout(state, origin, expectedVersion) {
+  const check = checkCheckout(state, origin, expectedVersion);
+  if (!check.ok) return { allowed: false, reason: check.reason };
+  const amount = check.total;
   const result = await attemptSpend(state, { origin, name: "place_order", amount });
   if (!result.allowed) return result;
   const orderId = globalThis.crypto.randomUUID();
   state.cart = [];
+  state.version += 1;
   return { allowed: true, orderId, amount, entry: result.entry };
 }
 
 /** Verify a peer manifest, register it, and audit the verdict. */
 export async function verifyPeerManifest(state, manifest, opts = {}) {
-  const result = await verifyManifest(manifest, {
-    revokedHashes: state.revokedHashes,
-    ...opts,
-  });
+  const preview = await previewManifest(state, manifest);
+  if (!preview.ok && preview.reason === "ManifestInvalid") {
+    // A value that is not a manifest at all is refused without registering it.
+    return preview;
+  }
+  // Any other verdict — verified or a failed check — is registered with its
+  // status and audited: the audit trail records every attempt, including a
+  // manifest that fails. The preview already computed the verdict, so only
+  // re-verify when it passed (to honour opts, such as revoked hashes).
+  const result = preview.ok
+    ? await verifyManifest(manifest, {
+        revokedHashes: state.revokedHashes,
+        ...opts,
+      })
+    : preview;
   const status = result.ok ? "verified" : result.reason;
   state.registry.push({ manifest, status, checkedAt: nowIso() });
   await audit(state, {
@@ -186,6 +250,35 @@ export async function verifyPeerManifest(state, manifest, opts = {}) {
     actor: "console",
   });
   return result;
+}
+
+/**
+ * Pure manifest verification (no registry, no audit): the read-only check
+ * the confirmation dialog runs before verify_manifest is confirmed.
+ * Returns { ok: true } or { ok: false, reason }. "ManifestInvalid" means
+ * the value is not a manifest-shaped object at all.
+ */
+export async function previewManifest(state, manifest) {
+  if (!manifest || typeof manifest !== "object" || Array.isArray(manifest)) {
+    return { ok: false, reason: "ManifestInvalid" };
+  }
+  return verifyManifest(manifest, { revokedHashes: state.revokedHashes });
+}
+
+/**
+ * Evaluate a proposed action against the policy without executing it.
+ * Returns the gate verdict plus the figures the agent needs to explain it.
+ */
+export function checkPolicy(state, action) {
+  const result = evaluatePolicy(state.policy, action, { dailySpent: dailySpent(state) });
+  return {
+    ...result,
+    perActionMax: state.policy.perActionMax,
+    dailyMax: state.policy.dailyMax,
+    dailySpent: dailySpent(state),
+    balance: state.policy.balance,
+    paused: state.policy.paused,
+  };
 }
 
 /** Apply a policy patch from the editor and audit the change. */
